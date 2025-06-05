@@ -31,6 +31,7 @@ SDL_Texture* World::loadTexture(const char* path) {
     if (!surface)
         throw std::runtime_error(std::string("Failed to load texture: ") + IMG_GetError());
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
     SDL_FreeSurface(surface);
     return texture;
 }
@@ -39,10 +40,12 @@ void World::generateWorld(int width, int height) {
     srand(SDL_GetTicks());
     tiles.clear();
 
-    std::vector<std::vector<int>> heightMap(width, std::vector<int>(height));
-    std::vector<std::vector<TileType>> typeMap(width, std::vector<TileType>(height, TILE_GRASS));
+    heightMap = std::vector<std::vector<int>>(width, std::vector<int>(height));
+    typeMap = std::vector<std::vector<TileType>>(width, std::vector<TileType>(height, TILE_GRASS));
 
-    std::vector<std::vector<bool>> featureMask(width, std::vector<bool>(height, false));
+    featureMask = std::vector<std::vector<bool>>(width, std::vector<bool>(height, false));
+    valleySeed = std::vector<std::vector<bool>>(width, std::vector<bool>(height, false));
+    lakeSeed = std::vector<std::vector<bool>>(width, std::vector<bool>(height, false));
 
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
@@ -55,9 +58,8 @@ void World::generateWorld(int width, int height) {
     }
 
     generateMountains(featureMask, heightMap, width, height, 5);
-    generateValleys(featureMask, heightMap, width, height, 5);
+    generateValleys(featureMask, valleySeed,heightMap, width, height, 5);
     
-
     // Generate tile instances
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
@@ -152,6 +154,7 @@ void World::generateMountains(std::vector<std::vector<bool>>& featureMask, std::
 }
 
 void World::generateValleys(std::vector<std::vector<bool>>& featureMask,
+                            std::vector<std::vector<bool>>& valleySeed,
                             std::vector<std::vector<int>>& heightMap,
                             int width, int height, int numValleys) {
     const int valleyDepth = 6;
@@ -159,6 +162,8 @@ void World::generateValleys(std::vector<std::vector<bool>>& featureMask,
     for (int i = 0; i < numValleys; ++i) {
         int centerX = rand() % width;
         int centerY = rand() % height;
+
+        bool makeLake = rand() % 100 > 50;
 
         if (featureMask[centerX][centerY]) {
             i--; // retry
@@ -182,6 +187,10 @@ void World::generateValleys(std::vector<std::vector<bool>>& featureMask,
                 coreTiles.insert({x, y});
                 heightMap[x][y] = peakH;
                 featureMask[x][y] = true;
+                valleySeed[x][y] = true;
+                if(makeLake){
+                    lakeSeed[x][y] = true;
+                }
 
                 for (auto [dx, dy] : { std::pair{-1,0}, {1,0}, {0,-1}, {0,1} }) {
                     if (rand() % 100 < 60)
@@ -213,6 +222,16 @@ void World::generateValleys(std::vector<std::vector<bool>>& featureMask,
             if (h < heightMap[x][y]) {
                 heightMap[x][y] = h;
                 featureMask[x][y] = true;
+                valleySeed[x][y] = true;
+
+                if (makeLake){
+                    lakeSeed[x][y] = true;
+                }
+            }
+
+            if (h<0 && makeLake){
+                // valleySeed[x][y] = true;
+                lakeSeed[x][y] = true;
             }
 
             for (auto [dx, dy] : { std::pair{-1,0}, {1,0}, {0,-1}, {0,1} }) {
@@ -227,117 +246,9 @@ void World::generateValleys(std::vector<std::vector<bool>>& featureMask,
     }
 }
 
+void World::generateLakes(std::vector<std::vector<bool>>& featureMask,std::vector<std::vector<int>>& heightMap, int width, int height, int count){
 
-// void World::render(int scrollX, int scrollY) {
-//     const int tileWidth = 64;
-//     const int tileHeight = 32;
-//     const int verticalOverlap = tileHeight / 4; // 8
-//     const int tilesPerHeight = 4;
-
-//     std::sort(tiles.begin(), tiles.end(), [](const TileInstance& a, const TileInstance& b) {
-//         return (a.gridX + a.gridY) < (b.gridX + b.gridY);
-//     });
-
-//     for (const auto& t : tiles) {
-//         // SDL_Texture* topTex = nullptr;
-//         // SDL_Texture* wallTex = cliffTexture;
-
-//         // switch (t.type) {
-//         //     case TILE_GRASS: topTex = grassTexture; break;
-//         //     case TILE_WATER: topTex = waterTexture; break;
-//         //     case TILE_ROCK:  topTex = rockTexture;  break;
-//         // }
-
-//         SDL_Texture* topTex = grassTexture;  // top tile always grass for now
-//         SDL_Texture* wallTex = cliffTexture; // walls always rock
-
-
-//         int isoX = (t.gridX - t.gridY) * (tileWidth / 2) - scrollX;
-//         int isoY = (t.gridX + t.gridY) * (tileHeight / 2) - scrollY;
-//         int topY = isoY - t.height * tilesPerHeight * verticalOverlap;
-
-//         if (t.height > 0) {
-//             // Stack walls downward (mountains)
-//             for (int h = t.height * tilesPerHeight; h >= 1; --h) {
-//                 SDL_Rect cliffDst = {
-//                     isoX,
-//                     topY + h * verticalOverlap,
-//                     tileWidth,
-//                     tileHeight
-//                 };
-//                 SDL_RenderCopy(renderer, wallTex, nullptr, &cliffDst);
-//             }
-//         } else if (t.height < 0) {
-//             int totalSubTiles = -t.height * tilesPerHeight;
-
-//             int baseDepth = -t.height;  // how deep the column starts
-//             for (int s = 0; s <= totalSubTiles; ++s) {
-//                 SDL_Rect cliffDst = {
-//                     isoX,
-//                     topY + s * verticalOverlap,
-//                     tileWidth,
-//                     tileHeight
-//                 };
-
-//                 int absoluteDepth = baseDepth * tilesPerHeight + s;
-
-//                 // Start bright at shallow levels and fade rapidly
-//                 int brightness = 255 - absoluteDepth * 10;
-
-//                 // Add shadow from neighbor
-//                 if (getHeightAt(t.gridX - 1, t.gridY) > t.height)
-//                     brightness -= 40;
-
-//                 brightness = std::clamp(brightness, 20, 255);
-
-//                 SDL_SetTextureColorMod(wallTex, brightness, brightness, brightness);
-//                 SDL_RenderCopy(renderer, wallTex, nullptr, &cliffDst);
-//             }
-
-
-//             SDL_SetTextureColorMod(wallTex, 255, 255, 255); // reset
-//         }
-
-//         for (auto [dx, dy] : { std::pair{1, 0}, std::pair{0, 1} }) { // right and bottom neighbors
-//             int nx = t.gridX + dx;
-//             int ny = t.gridY + dy;
-//             int neighborH = getHeightAt(nx, ny);
-
-//             int heightDiff = t.height - neighborH;
-//             if (heightDiff > 0) {
-//                 for (int h = 1; h <= heightDiff * tilesPerHeight; ++h) {
-//                     SDL_Rect cliffDst = {
-//                         isoX,
-//                         topY + h * verticalOverlap,
-//                         tileWidth,
-//                         tileHeight
-//                     };
-
-//                     int fakeDepth = -neighborH * tilesPerHeight + (h - 1);
-//                     int brightness = 255 - fakeDepth * 10;
-//                     brightness = std::clamp(brightness, 40, 255);
-
-//                     SDL_SetTextureColorMod(wallTex, brightness, brightness, brightness);
-
-//                     SDL_RenderCopy(renderer, wallTex, nullptr, &cliffDst);
-//                 }
-//                 SDL_SetTextureColorMod(wallTex, 255, 255, 255);
-//             }
-//         }
-
-//         bool shadowed = getHeightAt(t.gridX - 1, t.gridY) > t.height;
-//         int brightness = 180 + t.height * 20;  // High = bright, Low = dark
-
-//         if (getHeightAt(t.gridX - 1, t.gridY) > t.height)
-//             brightness -= 40;
-
-//         brightness = std::clamp(brightness, 40, 255);
-//         SDL_SetTextureColorMod(topTex, brightness, brightness, brightness);
-
-//         SDL_Rect topDst = { isoX, topY, tileWidth, tileHeight };
-//         SDL_RenderCopy(renderer, topTex, nullptr, &topDst);
-//     }
-// }
+}
 
 void World::render(int scrollX, int scrollY) {
     const int tileWidth = 64;
@@ -429,7 +340,7 @@ void World::render(int scrollX, int scrollY) {
             }
         }
 
-        // 🌥️ TOP TILE SHADOW AND BRIGHTNESS
+        // TOP TILE SHADOW AND BRIGHTNESS
         int brightness = 180 + t.height * 20;
         if (getHeightAt(t.gridX - 1, t.gridY) > t.height)
             brightness -= 40;
@@ -439,9 +350,30 @@ void World::render(int scrollX, int scrollY) {
 
         SDL_Rect topDst = { isoX, topY, scaledTileWidth, scaledTileHeight };
         SDL_RenderCopy(renderer, topTex, nullptr, &topDst);
+
+
+        // render water
+        if(lakeSeed[t.gridX][t.gridY] == true){
+                SDL_SetTextureBlendMode(waterTexture, SDL_BLENDMODE_BLEND);
+                SDL_SetTextureAlphaMod(waterTexture, 255*0.8);  // 80% opacity
+                SDL_SetTextureColorMod(waterTexture, 255, 255, 255);
+
+                int waterY = ((t.gridX + t.gridY) * (tileHeight / 2) - scrollY) * zoom;
+
+                SDL_Rect waterDst = {
+                    isoX,
+                    waterY,
+                    scaledTileWidth,
+                    scaledTileHeight
+                };
+
+                SDL_RenderCopy(renderer, waterTexture, nullptr, &waterDst);
+                SDL_SetTextureAlphaMod(waterTexture, 255);  // reset
+
+        }
+
     }
 }
-
 
 
 int World::getHeightAt(int x, int y) {

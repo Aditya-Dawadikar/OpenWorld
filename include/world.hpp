@@ -21,12 +21,20 @@ private:
 
     std::vector<TileInstance> tiles;
 
+    std::vector<std::vector<int>> heightMap;
+    std::vector<std::vector<TileType>> typeMap;
+
+    std::vector<std::vector<bool>> featureMask;
+    std::vector<std::vector<bool>> valleySeed;
+    std::vector<std::vector<bool>> lakeSeed;
+
     void generateWorld(int width, int height);
     SDL_Texture* loadTexture(const char* path);
     SDL_Texture* cliffTexture;
     int getHeightAt(int x, int y);
 
     void generateMountains(std::vector<std::vector<bool>>& featureMask,std::vector<std::vector<int>>& heightMap, int width, int height, int count);
-    void generateValleys(std::vector<std::vector<bool>>& featureMask,std::vector<std::vector<int>>& heightMap, int width, int height, int count);
+    void generateValleys(std::vector<std::vector<bool>>& featureMask,std::vector<std::vector<bool>>& valleySeed,std::vector<std::vector<int>>& heightMap, int width, int height, int count);
+    void generateLakes(std::vector<std::vector<bool>>& featureMask,std::vector<std::vector<int>>& heightMap, int width, int height, int count);
 
 };
