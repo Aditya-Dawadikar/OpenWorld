@@ -15,12 +15,14 @@ World::World(SDL_Renderer* renderer, int width, int height)
     waterTexture = loadTexture("../assets/water.png");
     rockTexture  = loadTexture("../assets/dirt.png");
     cliffTexture = loadTexture("../assets/rock.png");
+    bushTexture = loadTexture("../assets/bush.png");
+    dirtTexture = loadTexture("../assets/dirt.png");
 
-    
     heightMap = std::vector<std::vector<int>>(width, std::vector<int>(height));
     typeMap = std::vector<std::vector<TileType>>(width, std::vector<TileType>(height, TILE_GRASS));
 
     featureMask = std::vector<std::vector<bool>>(width, std::vector<bool>(height, false));
+    mountainSeed = std::vector<std::vector<bool>>(width, std::vector<bool>(height, false));
     valleySeed = std::vector<std::vector<bool>>(width, std::vector<bool>(height, false));
     lakeSeed = std::vector<std::vector<bool>>(width, std::vector<bool>(height, false));
 
@@ -75,6 +77,9 @@ void World::generateWorld() {
             });
         }
     }
+
+    generateBush(15);
+    generateDirt(5);
 }
 
 void World::generateMountains(int numPlateaus, int plateauRadius, int minHeight, int maxHeight, int falloffRadius){
@@ -108,6 +113,7 @@ void World::generateMountains(int numPlateaus, int plateauRadius, int minHeight,
                 heightMap[x][y] = peakH;
 
                 featureMask[x][y] = true;
+                mountainSeed[x][y] = true;
 
                 // Add neighbors with random chance
                 for (auto [dx, dy] : { std::pair{-1,0}, {1,0}, {0,-1}, {0,1} }) {
@@ -139,9 +145,11 @@ void World::generateMountains(int numPlateaus, int plateauRadius, int minHeight,
             if (x < 0 || y < 0 || x >= width || y >= height || h <= 0)
                 continue;
 
-            if (h > heightMap[x][y])
+            if (h > heightMap[x][y]){
                 heightMap[x][y] = h;
                 featureMask[x][y] = true;
+                mountainSeed[x][y] = true;
+            }
 
             for (auto [dx, dy] : { std::pair{-1,0}, {1,0}, {0,-1}, {0,1} }) {
                 int nx = x + dx;
@@ -263,7 +271,22 @@ void World::render(int scrollX, int scrollY) {
     });
 
     for (const auto& t : tiles) {
-        SDL_Texture* topTex = grassTexture;
+        SDL_Texture* topTex;
+
+        switch(t.type){
+            case TILE_GRASS:
+                topTex = grassTexture;
+                break;
+            case TILE_BUSH:
+                topTex = bushTexture;
+                break;
+            case TILE_DIRT:
+                topTex = dirtTexture;
+                break;
+            default:
+                topTex = grassTexture;
+        }
+
         SDL_Texture* wallTex = cliffTexture;
 
         int baseX = (t.gridX - t.gridY) * (tileWidth / 2);
@@ -290,7 +313,6 @@ void World::render(int scrollX, int scrollY) {
 
             return std::clamp(brightness, 20, 255);
         };
-
 
         // MOUNTAIN WALLS
         if (t.height > 0) {
@@ -354,12 +376,34 @@ void World::render(int scrollX, int scrollY) {
     }
 }
 
-
-
 int World::getHeightAt(int x, int y) {
     for (const auto& t : tiles) {
         if (t.gridX == x && t.gridY == y)
             return t.height;
     }
     return 0;
+}
+
+void World::generateBush(int density){
+    for(auto& t: tiles){
+        if (valleySeed[t.gridX][t.gridY] == false){
+            float makeBush = rand()%100 <= density;
+
+            if (makeBush){
+                t.type = TILE_BUSH;
+            }
+        }
+    }
+}
+
+void World::generateDirt(int density){
+    for(auto& t: tiles){
+        if (valleySeed[t.gridX][t.gridY] == false){
+            float makeDirt = rand()%100 <= density;
+
+            if (makeDirt){
+                t.type = TILE_DIRT;
+            }
+        }
+    }
 }
