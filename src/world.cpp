@@ -377,9 +377,8 @@ void World::render(int scrollX, int scrollY) {
 }
 
 int World::getHeightAt(int x, int y) {
-    for (const auto& t : tiles) {
-        if (t.gridX == x && t.gridY == y)
-            return t.height;
+    if (x>=0 && x<heightMap.size() && y>=0 && y<heightMap[0].size()){
+        return heightMap[x][y];
     }
     return 0;
 }
