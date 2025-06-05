@@ -18,6 +18,8 @@ private:
     SDL_Texture* grassTexture;
     SDL_Texture* waterTexture;
     SDL_Texture* rockTexture;
+    SDL_Texture* bushTexture;
+    SDL_Texture* dirtTexture;
 
     std::vector<TileInstance> tiles;
 
@@ -28,6 +30,7 @@ private:
 
     std::vector<std::vector<bool>> featureMask;
     std::vector<std::vector<bool>> valleySeed;
+    std::vector<std::vector<bool>> mountainSeed;
     std::vector<std::vector<bool>> lakeSeed;
 
     void generateWorld();
@@ -37,5 +40,7 @@ private:
 
     void generateMountains(int count, int spreadRadius, int minHeight, int maxHeight, int fallOffRange);
     void generateValleys(int count, int minDepth, int maxDepth);
+    void generateBush(int density);
+    void generateDirt(int density);
 
 };
