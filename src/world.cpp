@@ -273,29 +273,30 @@ void World::render(int scrollX, int scrollY) {
         int isoY = int((baseY - scrollY) * zoom + 0.5f);
         int topY = isoY - int(t.height * tilesPerHeight * scaledVerticalOverlap + 0.5f);
 
-        auto applyWallShadow = [&](int pixelY, int tileH) {
+        auto applyWallShadow = [&](int pixelY, int tileH, int x, int y) {
             int brightness = 255;
 
-            // Subtile depth-based darkness (only if below 0 height)
+            // Depth-based darkness for valleys
             float tileHeightAtPixel = tileH + float(pixelY) / tilesPerHeight;
             if (tileHeightAtPixel < 0.0f)
                 brightness -= pixelY * 10;
 
-            // Directional shadowing
-            int shadowPenalty = 0;
-            if (getHeightAt(t.gridX - 1, t.gridY) > tileH) shadowPenalty += 20;
-            if (getHeightAt(t.gridX + 1, t.gridY) > tileH) shadowPenalty += 20;
-            if (getHeightAt(t.gridX,     t.gridY + 1) > tileH) shadowPenalty += 20;
+            // Base lighting bias (optional)
+            brightness += 10;
 
-            brightness -= shadowPenalty;
+            // Apply shadow from higher tiles in shadow-casting directions
+            if (getHeightAt(x + 1, y) > tileH)     brightness -= 30; // Right tile casts shadow
+            if (getHeightAt(x,     y - 1) > tileH) brightness -= 30; // Top tile casts shadow
+
             return std::clamp(brightness, 20, 255);
         };
+
 
         // MOUNTAIN WALLS
         if (t.height > 0) {
             for (int h = t.height * tilesPerHeight; h >= 1; --h) {
                 SDL_Rect cliffDst = { isoX, topY + h * scaledVerticalOverlap, scaledTileWidth, scaledTileHeight };
-                int brightness = applyWallShadow(h, t.height);
+                int brightness = applyWallShadow(h, t.height, t.gridX, t.gridY);
                 SDL_SetTextureColorMod(wallTex, brightness, brightness, brightness);
                 SDL_RenderCopy(renderer, wallTex, nullptr, &cliffDst);
             }
@@ -305,7 +306,7 @@ void World::render(int scrollX, int scrollY) {
             int totalSubTiles = -t.height * tilesPerHeight;
             for (int s = 0; s <= totalSubTiles; ++s) {
                 SDL_Rect cliffDst = { isoX, topY + s * scaledVerticalOverlap, scaledTileWidth, scaledTileHeight };
-                int brightness = applyWallShadow(s, t.height);
+                int brightness = applyWallShadow(s, t.height, t.gridX, t.gridY);
                 SDL_SetTextureColorMod(wallTex, brightness, brightness, brightness);
                 SDL_RenderCopy(renderer, wallTex, nullptr, &cliffDst);
             }
@@ -321,7 +322,7 @@ void World::render(int scrollX, int scrollY) {
             if (heightDiff > 0) {
                 for (int h = 1; h <= heightDiff * tilesPerHeight; ++h) {
                     SDL_Rect cliffDst = { isoX, topY + h * scaledVerticalOverlap, scaledTileWidth, scaledTileHeight };
-                    int brightness = applyWallShadow(h, neighborH);
+                    int brightness = applyWallShadow(h, neighborH, t.gridX, t.gridY);
                     SDL_SetTextureColorMod(wallTex, brightness, brightness, brightness);
                     SDL_RenderCopy(renderer, wallTex, nullptr, &cliffDst);
                 }
