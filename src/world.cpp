@@ -11,10 +11,10 @@
 World::World(SDL_Renderer* renderer, int width, int height)
     : renderer(renderer), width(width), height(height) {
 
-    grassTexture = loadTexture("../assets/grass.png");
-    waterTexture = loadTexture("../assets/water.png");
+    grassTexture = loadTexture("../assets/grass-2.png");
+    waterTexture = loadTexture("../assets/water-1.png");
     rockTexture  = loadTexture("../assets/dirt.png");
-    cliffTexture = loadTexture("../assets/rock.png");
+    cliffTexture = loadTexture("../assets/wall.png");
     bushTexture = loadTexture("../assets/bush.png");
     dirtTexture = loadTexture("../assets/dirt.png");
 
@@ -78,8 +78,8 @@ void World::generateWorld() {
         }
     }
 
-    generateBush(15);
-    generateDirt(5);
+    // generateBush(15);
+    // generateDirt(5);
 }
 
 void World::generateMountains(int numPlateaus, int plateauRadius, int minHeight, int maxHeight, int falloffRadius){
