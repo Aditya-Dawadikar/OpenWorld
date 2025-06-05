@@ -1,0 +1,57 @@
+# Build artifacts
+build/
+bin/
+*.o
+*.obj
+*.exe
+*.out
+*.a
+*.so
+*.dll
+*.dylib
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# SDL2-related temporary files (if any)
+*.log
+*.tmp
+
+# IDEs and editors
+.vscode/
+.idea/
+*.code-workspace
+*.suo
+*.user
+*.userosscache
+*.sln
+*.VC.db
+*.DS_Store
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Debug and core dumps
+core
+*.stackdump
+
+# Assets cache (if dynamic)
+assets/cache/
+
+# Optional: compiled shaders or maps
+*.spv
+*.map
+
+# SDL_Image-generated cache (if used)
+*.bmp
+
+# Optional: ignore everything in assets except known subfolders
+# !assets/
+# !assets/grass.png
+# !assets/rock.png
+# !assets/archer_blond_hair.png
+assets/isometric_tileset
