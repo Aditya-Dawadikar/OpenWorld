@@ -5,7 +5,7 @@
 
 class World {
 public:
-    World(SDL_Renderer* renderer);
+    World(SDL_Renderer* renderer, int width, int height);
     ~World();
     void render(int scrollX, int scrollY);
 
@@ -21,6 +21,8 @@ private:
 
     std::vector<TileInstance> tiles;
 
+    int width, height;
+
     std::vector<std::vector<int>> heightMap;
     std::vector<std::vector<TileType>> typeMap;
 
@@ -28,13 +30,12 @@ private:
     std::vector<std::vector<bool>> valleySeed;
     std::vector<std::vector<bool>> lakeSeed;
 
-    void generateWorld(int width, int height);
+    void generateWorld();
     SDL_Texture* loadTexture(const char* path);
     SDL_Texture* cliffTexture;
     int getHeightAt(int x, int y);
 
-    void generateMountains(std::vector<std::vector<bool>>& featureMask,std::vector<std::vector<int>>& heightMap, int width, int height, int count);
-    void generateValleys(std::vector<std::vector<bool>>& featureMask,std::vector<std::vector<bool>>& valleySeed,std::vector<std::vector<int>>& heightMap, int width, int height, int count);
-    void generateLakes(std::vector<std::vector<bool>>& featureMask,std::vector<std::vector<int>>& heightMap, int width, int height, int count);
+    void generateMountains(int count, int spreadRadius, int minHeight, int maxHeight, int fallOffRange);
+    void generateValleys(int count, int minDepth, int maxDepth);
 
 };
