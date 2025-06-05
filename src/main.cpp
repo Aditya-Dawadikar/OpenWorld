@@ -10,7 +10,7 @@ int main() {
         // Create renderer + SDL
         Renderer renderer("2.5D Pixel World", 640, 480);
         SDL_Renderer* sdlRenderer = renderer.getRenderer();
-        World world(sdlRenderer);
+        World world(sdlRenderer, 50, 50);
 
         // Load player (uses 64x64 sprite frames)
         Player player(sdlRenderer, "../assets/archer_blond_hair.png", 64, 64);
